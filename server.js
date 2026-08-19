@@ -330,6 +330,7 @@ function renderProduct(productId, d, productContent) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${h(title)} – Amazing.com</title>
+  <link rel="icon" href="/assets/amazinglogo.jpg" type="image/jpeg">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -356,6 +357,7 @@ function render404(productId) {
 <head>
   <meta charset="UTF-8">
   <title>Product Not Found – Amazing.com</title>
+  <link rel="icon" href="/assets/amazinglogo.jpg" type="image/jpeg">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
