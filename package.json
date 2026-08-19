@@ -1,0 +1,12 @@
+{
+  "name": "amazingshop",
+  "version": "1.0.0",
+  "description": "Amazing.com mock e-commerce site",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

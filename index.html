@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazing.com – Deals &amp; Discoveries</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<style>
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #131921 0%, #232f3e 100%);
+    color: #fff;
+    text-align: center;
+    padding: 64px 24px;
+  }
+  .hero h2 { font-size: 32px; font-weight: 700; margin-bottom: 16px; line-height: 1.3; }
+  .hero p  { font-size: 16px; color: #ccc; margin-bottom: 28px; }
+  .hero-btn {
+    display: inline-block;
+    padding: 12px 36px;
+    background: #ffd814;
+    color: #131921;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 24px;
+    transition: background .15s;
+  }
+  .hero-btn:hover { background: #f7ca00; }
+
+  /* Product Grid */
+  .featured-section { max-width: 1400px; margin: 32px auto; padding: 0 20px; }
+  .featured-section h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #0F1111; border-bottom: 2px solid #febd69; padding-bottom: 8px; }
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .product-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+    background: #fff;
+  }
+  .product-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+  .product-card-img-wrap { display: block; overflow: hidden; background: #f5f5f5; }
+  .product-card-img-wrap img { width: 100%; height: 200px; object-fit: contain; padding: 12px; transition: transform .2s; }
+  .product-card-img-wrap:hover img { transform: scale(1.05); }
+  .product-card-body { padding: 12px; }
+  .product-card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #0F1111; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .product-card-stars { color: #f0841c; font-size: 13px; margin-bottom: 4px; }
+  .product-card-reviews { color: #007185; font-size: 12px; margin-bottom: 8px; }
+  .product-card-price { font-size: 18px; font-weight: 700; color: #0F1111; margin-bottom: 10px; }
+  .product-card-price span { font-size: 12px; vertical-align: top; font-weight: normal; line-height: 22px; }
+  .product-card-btn {
+    width: 100%;
+    padding: 8px;
+    background: #ffd814;
+    border: 1px solid #fcd200;
+    border-radius: 16px;
+    font-size: 13px;
+    color: #0F1111;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .product-card-btn:hover { background: #f7ca00; }
+
+  @media (max-width: 600px) {
+    .hero h2 { font-size: 22px; }
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  }
+</style>
+
+<!-- ── Header ── -->
+<header id="header">
+  <div id="header-main">
+    <a href="index.html" class="header-logo">
+      <img src="assets/amazinglogo.jpg" alt="Amazing.com">
+    </a>
+
+    <div class="header-deliver">
+      <span>Deliver to</span>
+      <span>United States</span>
+    </div>
+
+    <div class="header-search">
+      <select class="search-category" aria-label="Search category">
+        <option>All</option>
+        <option>Electronics</option>
+        <option>Clothing</option>
+        <option>Books</option>
+        <option>Home &amp; Garden</option>
+        <option>Sports</option>
+      </select>
+      <input class="search-input" type="text" placeholder="Search Amazing.com" aria-label="Search">
+      <button class="search-btn" aria-label="Search">&#128269;</button>
+    </div>
+
+    <div id="lang-btn" class="header-lang">
+      <img src="https://flagcdn.com/w20/us.png" alt="US flag">
+      <span>EN</span>
+      <span>&#9660;</span>
+    </div>
+
+    <div class="header-account">
+      <span>Hello, sign in</span>
+      <span>Account &amp; Lists &#9660;</span>
+    </div>
+
+    <div class="header-returns">
+      <span>Returns</span>
+      <span>&amp; Orders</span>
+    </div>
+
+    <a href="#" class="header-cart">
+      <div class="cart-icon" style="position:relative;font-size:30px;">
+        &#128722;
+        <span id="cart-count" class="cart-count">0</span>
+      </div>
+      <span class="cart-label">Cart</span>
+    </a>
+  </div>
+
+  <nav id="header-nav">
+    <a href="#" class="nav-link nav-link-all">&#9776; All</a>
+    <a href="#" class="nav-link">Today's Deals</a>
+    <a href="#" class="nav-link">Customer Service</a>
+    <a href="#" class="nav-link">Registry</a>
+    <a href="#" class="nav-link">Gift Cards</a>
+    <a href="#" class="nav-link">Electronics</a>
+    <a href="#" class="nav-link">Books</a>
+    <a href="#" class="nav-link">Home &amp; Garden</a>
+    <a href="#" class="nav-link">Sports &amp; Outdoors</a>
+    <a href="#" class="nav-link">Clothing</a>
+    <a href="#" class="nav-link">Sell</a>
+  </nav>
+</header>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <h2>Welcome to Amazing.com</h2>
+  <p>Everything You Need, Delivered Fast.</p>
+  <a href="product.html" class="hero-btn">Shop Now</a>
+</section>
+
+<!-- ── Featured Products ── -->
+<section class="featured-section">
+  <h2>Featured Products</h2>
+  <div class="product-grid">
+
+    <div class="product-card">
+      <a href="product.html" class="product-card-img-wrap">
+        <img src="https://placehold.co/300x300/eeeeee/555555?text=Product+1" alt="SoundWave Pro X1 Headphones">
+      </a>
+      <div class="product-card-body">
+        <p class="product-card-title">SoundWave Pro X1 Wireless Over-Ear Headphones with ANC</p>
+        <div class="product-card-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span class="product-card-reviews">4,218</span></div>
+        <p class="product-card-price"><span>$</span>64.99</p>
+        <button class="product-card-btn">Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <a href="product.html" class="product-card-img-wrap">
+        <img src="https://placehold.co/300x300/eeeeee/555555?text=Product+2" alt="UltraSlim Laptop Stand">
+      </a>
+      <div class="product-card-body">
+        <p class="product-card-title">UltraSlim Aluminum Adjustable Laptop Stand for Desk</p>
+        <div class="product-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span class="product-card-reviews">8,901</span></div>
+        <p class="product-card-price"><span>$</span>34.99</p>
+        <button class="product-card-btn">Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <a href="product.html" class="product-card-img-wrap">
+        <img src="https://placehold.co/300x300/eeeeee/555555?text=Product+3" alt="HydroFlask Water Bottle">
+      </a>
+      <div class="product-card-body">
+        <p class="product-card-title">AquaMax Insulated Stainless Steel Water Bottle 32 oz</p>
+        <div class="product-card-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span class="product-card-reviews">12,455</span></div>
+        <p class="product-card-price"><span>$</span>28.95</p>
+        <button class="product-card-btn">Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <a href="product.html" class="product-card-img-wrap">
+        <img src="https://placehold.co/300x300/eeeeee/555555?text=Product+4" alt="Mechanical Keyboard">
+      </a>
+      <div class="product-card-body">
+        <p class="product-card-title">TypeMaster TKL Mechanical Gaming Keyboard – RGB Backlit</p>
+        <div class="product-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span class="product-card-reviews">3,320</span></div>
+        <p class="product-card-price"><span>$</span>79.99</p>
+        <button class="product-card-btn">Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <a href="product.html" class="product-card-img-wrap">
+        <img src="https://placehold.co/300x300/eeeeee/555555?text=Product+5" alt="Wireless Charging Pad">
+      </a>
+      <div class="product-card-body">
+        <p class="product-card-title">ChargePlus 15W Fast Wireless Charging Pad, Qi Compatible</p>
+        <div class="product-card-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span class="product-card-reviews">6,780</span></div>
+        <p class="product-card-price"><span>$</span>19.99</p>
+        <button class="product-card-btn">Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <a href="product.html" class="product-card-img-wrap">
+        <img src="https://placehold.co/300x300/eeeeee/555555?text=Product+6" alt="Ergonomic Office Chair">
+      </a>
+      <div class="product-card-body">
+        <p class="product-card-title">ErgoComfort Pro Adjustable Mesh Office Chair with Lumbar Support</p>
+        <div class="product-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span class="product-card-reviews">2,195</span></div>
+        <p class="product-card-price"><span>$</span>249.00</p>
+        <button class="product-card-btn">Add to Cart</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div id="footer-top">Back to top</div>
+  <div id="footer-links">
+    <div class="footer-col">
+      <h4>Get to Know Us</h4>
+      <ul>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">About Amazing</a></li>
+        <li><a href="#">Investor Relations</a></li>
+        <li><a href="#">Sustainability</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Make Money with Us</h4>
+      <ul>
+        <li><a href="#">Sell on Amazing</a></li>
+        <li><a href="#">Sell Under Amazing Accelerator</a></li>
+        <li><a href="#">Protect &amp; Build Your Brand</a></li>
+        <li><a href="#">Become an Affiliate</a></li>
+        <li><a href="#">Advertise Your Products</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Amazing Payment Products</h4>
+      <ul>
+        <li><a href="#">Amazing Business Card</a></li>
+        <li><a href="#">Shop with Points</a></li>
+        <li><a href="#">Reload Your Balance</a></li>
+        <li><a href="#">Amazing Currency Converter</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Let Us Help You</h4>
+      <ul>
+        <li><a href="#">Amazing and COVID-19</a></li>
+        <li><a href="#">Your Account</a></li>
+        <li><a href="#">Your Orders</a></li>
+        <li><a href="#">Shipping Rates &amp; Policies</a></li>
+        <li><a href="#">Returns &amp; Replacements</a></li>
+        <li><a href="#">Help</a></li>
+      </ul>
+    </div>
+  </div>
+  <div id="footer-bottom">
+    <a href="index.html"><img src="assets/amazinglogo.jpg" alt="Amazing.com" style="height:28px;display:inline-block;vertical-align:middle;filter:brightness(0) invert(1);margin-bottom:8px;"></a><br>
+    <a href="#">Conditions of Use</a>
+    <a href="#">Privacy Notice</a>
+    <a href="#">Consumer Disclosure</a>
+    <a href="#">Your Ads Privacy Choices</a>
+    <br>
+    &copy; 2024, Amazing.com, Inc. or its affiliates. All rights reserved.
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
