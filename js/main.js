@@ -84,10 +84,74 @@ function initFooterTop() {
   if (el) el.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
+/* ── Related Products ── */
+function initRelatedProducts(relatedProducts) {
+  const section = document.getElementById('related-products-section');
+  const grid = document.getElementById('related-products-grid');
+
+  if (!relatedProducts || relatedProducts.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  // Show section and limit to max 6 items
+  section.style.display = 'block';
+  const items = relatedProducts.slice(0, 6);
+
+  // Get base URL (protocol + host)
+  const baseURL = `${window.location.protocol}//${window.location.host}`;
+
+  // Default image URL if not provided or empty
+  const defaultImageURL = 'https://www.sobres.es/cdn/shop/files/BOX155_02.jpg?v=1761919871&width=1500';
+
+  // Render each product
+  grid.innerHTML = items.map(product => {
+    const productId = product.relatedProductId || '';
+    const productName = product.relatedProductName || 'Product';
+    const productPrice = product.relatedProductPrice || 100;
+    const imageURL = (product.relatedProductImageURL && product.relatedProductImageURL.trim() !== '')
+      ? product.relatedProductImageURL
+      : defaultImageURL;
+
+    // Calculate prices
+    const currentPrice = Number(productPrice);
+    const listPrice = currentPrice * 1.2;
+    const savings = listPrice - currentPrice;
+    const savingsPercent = Math.round((savings / listPrice) * 100);
+
+    // Format prices
+    const currentPriceFormatted = `$${currentPrice.toFixed(2)}`;
+    const listPriceFormatted = `$${listPrice.toFixed(2)}`;
+    const savingsFormatted = `$${savings.toFixed(2)}`;
+
+    // Build product link
+    const productLink = `${baseURL}/${productId}`;
+
+    // Generate random rating between 3 and 5
+    const rating = Math.floor(Math.random() * 3) + 3;
+    const stars = '&#9733;'.repeat(rating) + '&#9734;'.repeat(5 - rating);
+
+    return `
+      <div class="related-product-card">
+        <img src="${imageURL}" alt="${productName}" class="related-product-image">
+        <a href="${productLink}" class="related-product-name">${productName}</a>
+        <div class="related-product-stars">${stars}</div>
+        <div class="related-product-price">${currentPriceFormatted}</div>
+        <div class="related-product-list-price">List: <s>${listPriceFormatted}</s></div>
+        <div class="related-product-save">You Save: ${savingsFormatted} (${savingsPercent}%)</div>
+      </div>
+    `;
+  }).join('');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initGallery();
   initVariants();
   initCart();
   initLang();
   initFooterTop();
+
+  // Initialize related products from server data (window.RELATED_PRODUCTS)
+  const relatedProductsData = window.RELATED_PRODUCTS || [];
+  initRelatedProducts(relatedProductsData);
 });

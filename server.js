@@ -165,7 +165,16 @@ function renderGallery(d) {
 function renderPriceBlock(d) {
   const sp = d.sellingPrice;
   if (!sp || sp.sellingPriceAmount == null) return '';
-  const { sym, whole, frac } = formatPrice(sp.sellingPriceAmount, sp.sellingCurrency?.Code);
+
+  const currentPrice = sp.sellingPriceAmount;
+  const listPrice = currentPrice * 1.2;
+  const savings = listPrice - currentPrice;
+  const savingsPercent = Math.round((savings / listPrice) * 100);
+
+  const { sym, whole, frac } = formatPrice(currentPrice, sp.sellingCurrency?.Code);
+  const listPriceFormatted = formatPrice(listPrice, sp.sellingCurrency?.Code);
+  const savingsFormatted = formatPrice(savings, sp.sellingCurrency?.Code);
+
   const label = sp.sellingPriceType?.Name || 'Price';
   return `
     <div class="price-block">
@@ -175,6 +184,8 @@ function renderPriceBlock(d) {
         <span class="price-whole">${h(whole)}</span>
         <span class="price-fraction">.${h(frac)}</span>
       </div>
+      <p class="price-was">List Price: <s>${h(listPriceFormatted.sym)}${h(listPriceFormatted.whole)}.${h(listPriceFormatted.frac)}</s></p>
+      <p class="price-save">You Save: ${h(savingsFormatted.sym)}${h(savingsFormatted.whole)}.${h(savingsFormatted.frac)} (${savingsPercent}%)</p>
     </div>
     <hr class="divider">`;
 }
@@ -206,6 +217,11 @@ function renderInfoColumn(productId, d, productContent) {
     <h1 class="product-title">${h(title)}</h1>
     ${brand ? `<p class="product-brand">Brand: <a href="#">${h(brand)}</a></p>` : ''}
     ${shortDesc ? `<p class="product-short-desc">${h(shortDesc)}</p>` : ''}
+    <div class="rating-row">
+      <span class="stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
+      <span class="rating-count">4,218 ratings</span>
+      <span style="color:#555;font-size:13px;">| 312 answered questions</span>
+    </div>
     <hr class="divider">
     ${renderPriceBlock(d)}
 
@@ -282,8 +298,20 @@ function renderInfoColumn(productId, d, productContent) {
 function renderBuyBox(d) {
   const sp = d.sellingPrice;
   const priceHtml = sp && sp.sellingPriceAmount != null ? (() => {
-    const { sym, whole, frac } = formatPrice(sp.sellingPriceAmount, sp.sellingCurrency?.Code);
-    return `<div class="buy-price"><span class="p-sym">${h(sym)}</span><span class="p-int">${h(whole)}</span><span class="p-dec">.${h(frac)}</span></div>`;
+    const currentPrice = sp.sellingPriceAmount;
+    const listPrice = currentPrice * 1.2;
+    const savings = listPrice - currentPrice;
+    const savingsPercent = Math.round((savings / listPrice) * 100);
+
+    const { sym, whole, frac } = formatPrice(currentPrice, sp.sellingCurrency?.Code);
+    const listPriceFormatted = formatPrice(listPrice, sp.sellingCurrency?.Code);
+    const savingsFormatted = formatPrice(savings, sp.sellingCurrency?.Code);
+
+    return `
+      <div class="buy-price"><span class="p-sym">${h(sym)}</span><span class="p-int">${h(whole)}</span><span class="p-dec">.${h(frac)}</span></div>
+      <p class="buy-list-price">List Price: <s>${h(listPriceFormatted.sym)}${h(listPriceFormatted.whole)}.${h(listPriceFormatted.frac)}</s></p>
+      <p class="buy-save">You Save: ${h(savingsFormatted.sym)}${h(savingsFormatted.whole)}.${h(savingsFormatted.frac)} (${savingsPercent}%)</p>
+    `;
   })() : '';
 
   const manufacturer = d.manufacturer || d.brand || 'Amazing Seller';
@@ -292,7 +320,11 @@ function renderBuyBox(d) {
   <aside id="buy-column">
     <div class="buy-box">
       ${priceHtml}
-      <p class="buy-shipping">FREE delivery <span style="font-weight:700;">Tomorrow</span></p>
+      <p class="buy-shipping">
+        FREE delivery <span style="font-weight:700;">Tomorrow</span><br>
+        Or fastest delivery <span>Today by 9 PM</span>
+        — <a href="#">Order within 3 hrs 42 mins</a>
+      </p>
       <p class="buy-stock">In Stock</p>
       <div class="buy-qty">
         <label for="qty-select">Qty:</label>
@@ -314,7 +346,7 @@ function renderBuyBox(d) {
 
 /* ── Full product page renderer ────────────────────────────────── */
 
-function renderProduct(productId, d, productContent) {
+function renderProduct(productId, d, productContent, relatedProducts) {
   const enDesc  = (d.description || []).find(x => x?.descriptionLanguage?.Code === 'en') || {};
   const title   = enDesc.productTitle || d.identifier || productId;
   const gallery = renderGallery(d);
@@ -323,6 +355,8 @@ function renderProduct(productId, d, productContent) {
   const gridStyle = hasGallery
     ? ''
     : ' style="grid-template-columns: 1fr 260px;"';
+
+  const relatedProductsJson = JSON.stringify(relatedProducts || []);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -343,7 +377,16 @@ ${renderHeader()}
   ${renderInfoColumn(productId, d, productContent)}
   ${renderBuyBox(d)}
 </main>
+<div id="related-products-section" class="related-products-section" style="display:none;">
+  <div class="related-products-container">
+    <h3>Explore top deals in related categories</h3>
+    <div id="related-products-grid" class="related-products-grid"></div>
+  </div>
+</div>
 ${renderFooter()}
+<script>
+  window.RELATED_PRODUCTS = ${relatedProductsJson};
+</script>
 <script src="/js/main.js"></script>
 </body>
 </html>`;
@@ -376,13 +419,18 @@ ${renderFooter()}
 
 app.post('/createProduct', (req, res) => {
   const { productId, productContent } = req.body;
-  let { productData } = req.body;
+  let { productData, relatedProducts } = req.body;
 
   if (!productId) return res.status(400).json({ error: 'productId is required' });
 
   if (typeof productData === 'string') {
     try { productData = JSON.parse(productData); }
     catch (e) { return res.status(400).json({ error: 'productData must be valid JSON', detail: e.message }); }
+  }
+
+  if (typeof relatedProducts === 'string') {
+    try { relatedProducts = JSON.parse(relatedProducts); }
+    catch (e) { return res.status(400).json({ error: 'relatedProducts must be valid JSON', detail: e.message }); }
   }
 
   const safeName = path.basename(String(productId));
@@ -392,7 +440,11 @@ app.post('/createProduct', (req, res) => {
 
   const filePath = path.join(ITEMS, `${safeName}.json`);
   try {
-    fs.writeFileSync(filePath, JSON.stringify({ productData: productData || {}, productContent: productContent || '' }, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify({
+      productData: productData || {},
+      productContent: productContent || '',
+      relatedProducts: relatedProducts || []
+    }, null, 2), 'utf8');
     res.json({ success: true, productId: safeName, url: `/${safeName}` });
   } catch (e) {
     res.status(500).json({ error: 'Failed to save product', detail: e.message });
@@ -407,8 +459,8 @@ app.get('/:productId', (req, res, next) => {
   if (!fs.existsSync(filePath)) return res.status(404).send(render404(productId));
 
   try {
-    const { productData, productContent } = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    res.send(renderProduct(productId, productData || {}, productContent || ''));
+    const { productData, productContent, relatedProducts } = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.send(renderProduct(productId, productData || {}, productContent || '', relatedProducts || []));
   } catch (e) {
     res.status(500).send(`<p>Error rendering product: ${h(e.message)}</p>`);
   }
