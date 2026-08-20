@@ -162,8 +162,16 @@ function renderGallery(d) {
 
 /* ── Price block ───────────────────────────────────────────────── */
 
+function getSellingPrice(productData) {
+  const priceList = Array.isArray(productData.sellingPrice) ? productData.sellingPrice : [];
+  if (!priceList.length) return null;
+
+  const usdPrice = priceList.find(p => p?.sellingCurrency?.Code === 'USD');
+  return usdPrice || priceList[0];
+}
+
 function renderPriceBlock(d) {
-  const sp = d.sellingPrice;
+  const sp = getSellingPrice(d);
   if (!sp || sp.sellingPriceAmount == null) return '';
 
   const currentPrice = sp.sellingPriceAmount;
@@ -296,7 +304,7 @@ function renderInfoColumn(productId, d, productContent) {
 /* ── Buy box ───────────────────────────────────────────────────── */
 
 function renderBuyBox(d) {
-  const sp = d.sellingPrice;
+  const sp = getSellingPrice(d);
   const priceHtml = sp && sp.sellingPriceAmount != null ? (() => {
     const currentPrice = sp.sellingPriceAmount;
     const listPrice = currentPrice * 1.2;
