@@ -1,8 +1,88 @@
-/* ── Thumbnail Gallery ── */
-function initGallery() {
-  const mainImg = document.getElementById('main-img');
-  const thumbs  = document.querySelectorAll('.thumbnail');
+/* ── Build unique image list from product attributes ── */
+function proxyImageUrl(url) {
+  // If URL requires authentication (Informatica Cloud), rewrite to use proxy
+  const INFA_BASE_URL = 'https://usw1-cai.dmp-us.informaticacloud.com/activevos-central';
+  if (url && url.startsWith(INFA_BASE_URL)) {
+    return `/proxy-image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
 
+function buildProductImages(product) {
+  if (!product) return [];
+
+  const imageURLs = [];
+
+  // Add main_image_url first (if exists)
+  if (product.main_image_url && product.main_image_url.trim()) {
+    imageURLs.push(product.main_image_url.trim());
+  }
+
+  // Add front_image_url
+  if (product.front_image_url && product.front_image_url.trim()) {
+    imageURLs.push(product.front_image_url.trim());
+  }
+
+  // Add other_image_url
+  if (product.other_image_url && product.other_image_url.trim()) {
+    imageURLs.push(product.other_image_url.trim());
+  }
+
+  // Add all images from media array
+  if (product.media && Array.isArray(product.media)) {
+    product.media.forEach(mediaItem => {
+      if (mediaItem.image_url && mediaItem.image_url.trim()) {
+        imageURLs.push(mediaItem.image_url.trim());
+      }
+    });
+  }
+
+  // Remove duplicates while preserving order
+  const uniqueImages = [];
+  const seen = new Set();
+
+  imageURLs.forEach(url => {
+    if (!seen.has(url)) {
+      seen.add(url);
+      uniqueImages.push(url);
+    }
+  });
+
+  // Rewrite protected URLs to use proxy
+  return uniqueImages.map(proxyImageUrl);
+}
+
+/* ── Thumbnail Gallery ── */
+function initGallery(productImages) {
+  const mainImg = document.getElementById('main-img');
+  const thumbnailList = document.querySelector('.thumbnail-list');
+
+  // If product images provided, rebuild the gallery
+  if (productImages && productImages.length > 0) {
+    thumbnailList.innerHTML = '';
+
+    productImages.forEach((imageURL, index) => {
+      const thumbDiv = document.createElement('div');
+      thumbDiv.className = 'thumbnail' + (index === 0 ? ' active' : '');
+      thumbDiv.dataset.full = imageURL;
+
+      const thumbImg = document.createElement('img');
+      thumbImg.src = imageURL;
+      thumbImg.alt = `View ${index + 1}`;
+
+      thumbDiv.appendChild(thumbImg);
+      thumbnailList.appendChild(thumbDiv);
+    });
+
+    // Set main image to first image
+    if (mainImg && productImages[0]) {
+      mainImg.src = productImages[0];
+      mainImg.alt = 'Product Image';
+    }
+  }
+
+  // Attach click handlers to all thumbnails
+  const thumbs = document.querySelectorAll('.thumbnail');
   thumbs.forEach(thumb => {
     thumb.addEventListener('click', () => {
       mainImg.src = thumb.dataset.full;
@@ -145,7 +225,15 @@ function initRelatedProducts(relatedProducts) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initGallery();
+  // Get product data from window object (set by server/backend)
+  const productData = window.PRODUCT_DATA || null;
+
+  // Build unique image list from product attributes
+  const productImages = buildProductImages(productData);
+
+  // Initialize gallery with product images
+  initGallery(productImages);
+
   initVariants();
   initCart();
   initLang();

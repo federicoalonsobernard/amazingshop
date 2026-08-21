@@ -314,6 +314,28 @@
   </div>
 </footer>
 
+<script>
+  // Product data — populate from backend/server
+  // The gallery will automatically pull images from:
+  //   1. main_image_url (shown first)
+  //   2. front_image_url
+  //   3. other_image_url
+  //   4. All images under media array
+  // Duplicate URLs are automatically removed
+  window.PRODUCT_DATA = {
+    main_image_url: 'https://placehold.co/600x600/eeeeee/555555?text=Product+Main',
+    front_image_url: 'https://placehold.co/600x600/eeeeee/555555?text=Product+Front',
+    other_image_url: 'https://placehold.co/600x600/eeeeee/555555?text=Product+Other',
+    media: [
+      { image_url: 'https://placehold.co/600x600/eeeeee/555555?text=Product+Media+1' },
+      { image_url: 'https://placehold.co/600x600/eeeeee/555555?text=Product+Media+2' },
+      { image_url: 'https://placehold.co/600x600/eeeeee/555555?text=Product+Media+3' }
+    ]
+  };
+
+  // Related products data
+  window.RELATED_PRODUCTS = [];
+</script>
 <script src="js/main.js"></script>
 </body>
 </html>

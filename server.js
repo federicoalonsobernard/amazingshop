@@ -1,12 +1,28 @@
 'use strict';
+require('dotenv').config();
 const express = require('express');
 const fs      = require('fs');
 const path    = require('path');
+const https   = require('https');
 
 const app      = express();
 const PORT     = 5501;
 const ROOT     = __dirname;
 const ITEMS    = path.join(ROOT, 'items');
+
+// Informatica Cloud credentials for protected images
+const INFA_USERNAME = process.env.INFA_USERNAME;
+const INFA_PASSWORD = process.env.INFA_PASSWORD;
+const INFA_BASE_URL = 'https://usw1-cai.dmp-us.informaticacloud.com/activevos-central';
+const INFA_LOGIN_URL = 'https://dmp-us.informaticacloud.com/saas/public/core/v3/login';
+
+if (!INFA_PASSWORD) {
+  console.warn('⚠️  INFA_PASSWORD not set - authenticated images will fall back to placeholders');
+}
+
+// Cache session ID to avoid repeated logins
+let cachedSessionId = null;
+let sessionExpiry = 0;
 
 if (!fs.existsSync(ITEMS)) fs.mkdirSync(ITEMS, { recursive: true });
 
@@ -137,15 +153,65 @@ function renderFooter() {
 
 /* ── Image gallery ─────────────────────────────────────────────── */
 
-function renderGallery(d) {
-  const medias    = Array.isArray(d.medias) ? d.medias : [];
-  const mainImage = medias[0]?.image_url || d.main_image_url || d.front_image_url || d.image_url || '';
-  if (!mainImage) return '';
+function proxyImageUrl(url) {
+  // If URL requires authentication, rewrite it to use our proxy
+  if (url && url.startsWith(INFA_BASE_URL)) {
+    return `/proxy-image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
 
-  const thumbsHtml = medias.length > 1
-    ? medias.map((m, i) => `
-      <div class="thumbnail${i === 0 ? ' active' : ''}" data-full="${h(m.image_url)}">
-        <img src="${h(m.image_url)}" alt="${h(m.image_name || 'View ' + (i+1))}"
+function buildProductImages(d) {
+  const imageURLs = [];
+
+  // Add main_image_url first (if exists)
+  if (d.main_image_url && String(d.main_image_url).trim()) {
+    imageURLs.push(String(d.main_image_url).trim());
+  }
+
+  // Add front_image_url
+  if (d.front_image_url && String(d.front_image_url).trim()) {
+    imageURLs.push(String(d.front_image_url).trim());
+  }
+
+  // Add other_image_url
+  if (d.other_image_url && String(d.other_image_url).trim()) {
+    imageURLs.push(String(d.other_image_url).trim());
+  }
+
+  // Add all images from media array
+  if (Array.isArray(d.media)) {
+    d.media.forEach(mediaItem => {
+      if (mediaItem.image_url && String(mediaItem.image_url).trim()) {
+        imageURLs.push(String(mediaItem.image_url).trim());
+      }
+    });
+  }
+
+  // Remove duplicates while preserving order
+  const uniqueImages = [];
+  const seen = new Set();
+
+  imageURLs.forEach(url => {
+    if (!seen.has(url)) {
+      seen.add(url);
+      uniqueImages.push(url);
+    }
+  });
+
+  // Rewrite protected URLs to use proxy
+  return uniqueImages.map(proxyImageUrl);
+}
+
+function renderGallery(d) {
+  const images = buildProductImages(d);
+  console.log('🖼️  Gallery images found:', images.length, images);
+  if (!images.length) return '';
+
+  const thumbsHtml = images.length > 1
+    ? images.map((url, i) => `
+      <div class="thumbnail${i === 0 ? ' active' : ''}" data-full="${h(url)}">
+        <img src="${h(url)}" alt="View ${i+1}"
           onerror="this.src='https://placehold.co/54x54/eeeeee/555555?text=${i+1}'">
       </div>`).join('')
     : '';
@@ -154,7 +220,7 @@ function renderGallery(d) {
   <div id="image-column">
     ${thumbsHtml ? `<div class="thumbnail-list">${thumbsHtml}</div>` : ''}
     <div class="main-image-wrap">
-      <img id="main-img" src="${h(mainImage)}" alt="Product image"
+      <img id="main-img" src="${h(images[0])}" alt="Product image"
         onerror="this.src='https://placehold.co/600x600/eeeeee/555555?text=No+Image'">
     </div>
   </div>`;
@@ -365,6 +431,7 @@ function renderProduct(productId, d, productContent, relatedProducts) {
     : ' style="grid-template-columns: 1fr 260px;"';
 
   const relatedProductsJson = JSON.stringify(relatedProducts || []);
+  const productDataJson = JSON.stringify(d || {});
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -393,6 +460,7 @@ ${renderHeader()}
 </div>
 ${renderFooter()}
 <script>
+  window.PRODUCT_DATA = ${productDataJson};
   window.RELATED_PRODUCTS = ${relatedProductsJson};
 </script>
 <script src="/js/main.js"></script>
@@ -424,6 +492,144 @@ ${renderFooter()}
 }
 
 /* ── Routes ────────────────────────────────────────────────────── */
+
+// Get Informatica Cloud session ID
+function getInfaSessionId() {
+  return new Promise((resolve, reject) => {
+    // Use cached session if still valid
+    if (cachedSessionId && Date.now() < sessionExpiry) {
+      console.log('✅ Using cached session ID');
+      return resolve(cachedSessionId);
+    }
+
+    console.log('🔑 Authenticating with Informatica Cloud...');
+
+    const loginData = JSON.stringify({
+      username: INFA_USERNAME,
+      password: INFA_PASSWORD
+    });
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(loginData),
+        'User-Agent': 'Amazing.com/1.0'
+      }
+    };
+
+    const loginReq = https.request(INFA_LOGIN_URL, options, (loginRes) => {
+      let data = '';
+
+      loginRes.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      loginRes.on('end', () => {
+        if (loginRes.statusCode !== 200) {
+          console.error('❌ Login failed with status:', loginRes.statusCode);
+          return reject(new Error(`Login failed: ${loginRes.statusCode}`));
+        }
+
+        try {
+          const response = JSON.parse(data);
+          const sessionId = response?.userInfo?.sessionId;
+
+          if (!sessionId) {
+            console.error('❌ No sessionId in response:', data.substring(0, 200));
+            return reject(new Error('No sessionId in login response'));
+          }
+
+          console.log('✅ Authenticated successfully, session ID:', sessionId.substring(0, 20) + '...');
+
+          // Cache for 30 minutes
+          cachedSessionId = sessionId;
+          sessionExpiry = Date.now() + (30 * 60 * 1000);
+
+          resolve(sessionId);
+        } catch (err) {
+          console.error('❌ Failed to parse login response:', err.message);
+          reject(err);
+        }
+      });
+    });
+
+    loginReq.on('error', (err) => {
+      console.error('❌ Login request error:', err.message);
+      reject(err);
+    });
+
+    loginReq.write(loginData);
+    loginReq.end();
+  });
+}
+
+// Image proxy for authenticated Informatica Cloud images
+app.get('/proxy-image', async (req, res) => {
+  const imageUrl = req.query.url;
+
+  if (!imageUrl) {
+    return res.status(400).send('Missing url parameter');
+  }
+
+  // Only proxy Informatica Cloud URLs
+  if (!imageUrl.startsWith(INFA_BASE_URL)) {
+    return res.status(403).send('Only Informatica Cloud URLs are proxied');
+  }
+
+  console.log('🖼️  Proxying authenticated image:', imageUrl.substring(0, 100) + '...');
+
+  try {
+    // Get session ID
+    const sessionId = await getInfaSessionId();
+
+    // Fetch image with session ID in header
+    const options = {
+      headers: {
+        'IDS-SESSION-ID': sessionId,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'image/*,*/*'
+      }
+    };
+
+    console.log('📡 Fetching image with session...');
+
+    https.get(imageUrl, options, (proxyRes) => {
+      console.log('📡 Response status:', proxyRes.statusCode);
+
+      // Handle redirects - if still redirecting, session might be invalid
+      if (proxyRes.statusCode === 302 || proxyRes.statusCode === 301) {
+        const redirectUrl = proxyRes.headers.location;
+        console.log('⚠️  Got redirect to:', redirectUrl);
+
+        // Clear cached session and retry once
+        if (redirectUrl && (redirectUrl.includes('/login') || redirectUrl.includes('/ma/home'))) {
+          console.log('⚠️  Session invalid, clearing cache');
+          cachedSessionId = null;
+          sessionExpiry = 0;
+          return res.redirect('https://placehold.co/600x600/eeeeee/333333?text=Auth+Failed');
+        }
+      }
+
+      if (proxyRes.statusCode !== 200) {
+        console.error('❌ Image fetch failed with status:', proxyRes.statusCode);
+        return res.redirect('https://placehold.co/600x600/eeeeee/333333?text=Error+' + proxyRes.statusCode);
+      }
+
+      console.log('✅ Image fetched successfully');
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      proxyRes.pipe(res);
+    }).on('error', (err) => {
+      console.error('❌ Proxy request error:', err.message);
+      res.redirect('https://placehold.co/600x600/eeeeee/333333?text=Network+Error');
+    });
+
+  } catch (err) {
+    console.error('❌ Authentication error:', err.message);
+    res.redirect('https://placehold.co/600x600/eeeeee/333333?text=Auth+Error');
+  }
+});
 
 app.post('/createProduct', (req, res) => {
   const { productId, productContent } = req.body;
